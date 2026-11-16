@@ -1,4 +1,4 @@
-/* Client-side helpers for the read-only sample directories. */
+/* Progressive enhancements; forms, auth and task filters work without JavaScript. */
 (function () {
     'use strict';
 
@@ -80,6 +80,11 @@
 
     function initialize() {
         document.querySelectorAll('[data-directory]').forEach(initializeDirectory);
+        document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+            });
+        });
     }
 
     window.CounterDirectories = { initialize: initialize };

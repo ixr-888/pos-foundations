@@ -2,25 +2,12 @@
 @section('title', 'About')
 @section('page', 'about')
 @section('breadcrumb', 'About')
-
 @section('content')
-<div class="page-heading"><div><p class="eyebrow">A LITTLE CONTEXT</p><h1>About Counter</h1><p class="page-description">The foundation of a more organized store.</p></div><span class="quiet-badge">Counter POS · v2.0</span></div>
-
-<section class="about-hero panel">
-    <div class="about-mark"><img src="{{ asset('images/mark.svg') }}" width="68" height="68" alt=""></div>
-    <p class="eyebrow">PEOPLE FIRST. ALWAYS.</p>
-    <h2>A simple place for<br>the people in your business.</h2>
-    <p>Counter brings customer and team account information into one easy-to-navigate workspace. Start with the people who make your store work, and build from there.</p>
-    <a class="button button-primary" href="{{ route('home') }}">Back to overview <span aria-hidden="true">↗</span></a>
-</section>
-
+<div class="page-heading"><div><p class="eyebrow">A LITTLE ORDER GOES A LONG WAY</p><h1>About Counter.</h1><p class="page-description">A shared task workspace for the people behind the counter.</p></div></div>
+<section class="panel about-hero"><img class="about-mark" src="{{ asset('images/mark.svg') }}" alt="" width="56" height="56"><p class="eyebrow">TASKS FOR TODAY</p><h2>Clear tasks. A smoother day.</h2><p>Counter brings your daily store tasks together, so everyone knows what comes next and what is already done.</p><a class="button button-primary" href="{{ route('tasks.index') }}">Explore the task list</a></section>
 <div class="about-grid">
-    <section class="panel about-section"><span class="feature-icon"><svg aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#customers"></use></svg></span><h2>Know your customers</h2><p>View customer names, contact details, cities, and account status in a single directory. Search and filter to find the right record quickly.</p><a class="text-link" href="{{ route('customers.index') }}">Explore customer accounts <span aria-hidden="true">↗</span></a></section>
-    <section class="panel about-section"><span class="feature-icon blue"><svg aria-hidden="true"><use href="{{ asset('images/icons.svg') }}#users"></use></svg></span><h2>Know your team</h2><p>Browse user accounts, usernames, roles, and statuses. Keep a clear view of the people who support your day-to-day operations.</p><a class="text-link" href="{{ route('users.index') }}">Explore user accounts <span aria-hidden="true">↗</span></a></section>
+    <section class="panel about-section"><h2>A plan everyone can see</h2><p>The Welcome, Task List, Profile, and About pages are open to everyone. Search tasks, check due dates, and see progress without an account.</p><h2>A workspace your team can manage</h2><p>Log in to create, edit, and archive tasks. Each task has a title, description, due date, priority, and progress status.</p></section>
+    <section class="panel about-section"><h2>Completion stays in the loop</h2><p>When an existing task moves to Done, a completion email is generated for the workspace recipient. Editing a task that is already Done does not send a repeat.</p><h2>A tidy list, with a history</h2><p>Archiving removes a task from the active list while retaining its database record.</p></section>
 </div>
-
-<section class="panel project-details">
-    <div><p class="eyebrow">ABOUT THIS PROJECT</p><h2>From arrays to Eloquent</h2><p>Created for IT0049 TFA6, this Laravel application uses migrations to define its tables, seeders for fictional sample data, and Eloquent models to retrieve records. Blade views display the stored customer and staff accounts.</p></div>
-    <dl><div><dt>Framework</dt><dd>Laravel 12 · PHP 8.2+</dd></div><div><dt>Pages</dt><dd>Overview, About, Customers, Users</dd></div><div><dt>Directory data</dt><dd>Database records via Eloquent</dd></div><div><dt>Project scope</dt><dd>Read-only account listings</dd></div></dl>
-</section>
+<section class="panel project-details"><div><p class="eyebrow">THE PROJECT</p><h2>Built with Laravel.</h2><p>Tasks for Today extends the Counter POS foundations with database-backed workflows, Breeze authentication, validation, and completion notifications.</p></div><dl><div><dt>Course</dt><dd>IT0049 · Web System Technologies</dd></div><div><dt>Activity</dt><dd>Technical Summative Assessment 4</dd></div><div><dt>Authentication</dt><dd>Laravel Breeze · Blade</dd></div><div><dt>Task storage</dt><dd>Eloquent · SQLite or MySQL</dd></div></dl></section>
 @endsection

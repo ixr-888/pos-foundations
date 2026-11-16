@@ -1,61 +1,62 @@
-# Verification — TFA6 revision
+# Verification record — TSA4 revision
 
-Updated on 30 October 2026.
+Prepared against the attached IT0049 TSA4 activity sheet. The source project
+was a static Counter POS directory; this revision adds the task-management
+requirements described in README.md.
 
-## Checks completed in this editing environment
+## Completed checks
 
-| Check | Result | Scope |
-| --- | --- | --- |
-| Source, seed data, configuration, and original snapshot checks | 35 checks passed | Required seed fields, five distinct records per table, unique sample emails/usernames, valid dates, string phone values, model/controller/view references, Eloquent query presence, dashboard queries, date formatting, empty states, Composer JSON and PHPUnit XML, 12 supplied test methods, nine unchanged historical files, and exclusion of local secrets/dependencies |
-| SQLite schema/data simulation | Passed as part of the 35 checks | Python translated the known original Blueprint fields into SQLite DDL, inserted the sample values, renamed the columns, checked the names and row counts, rejected a duplicate username, and reversed the renames |
-| JavaScript syntax | Passed | `node --check public/js/app.js` |
-
-The SQLite simulation did **not** execute PHP migrations, Eloquent, or seeders.
-Source checks also do not establish that Laravel boots or Blade compiles.
-
-## Checks that could not run here
-
-| Check | Status and reason |
+| Check | Result and scope |
 | --- | --- |
-| PHP syntax lint | Not run: no PHP executable is installed |
-| Composer dependency installation | Not run: Composer is absent and package-network access was unavailable |
-| Artisan setup, migration execution, and Blade compilation | Not run: require PHP and installed dependencies |
-| Laravel PHPUnit suite | Not run: 12 tests are supplied; execution requires PHP and Composer |
-| MySQL execution | Not run: no MySQL test environment was available |
-| Browser rendering and interaction | Not run: no browser executable is installed |
-| GitHub repository, CI run, and public hosting | Not created: the available GitHub and hosting integrations are disabled by the account administrator |
+| Source lexical and delimiter checks | Passed for 60 PHP files using a PHP lexer. This is not native PHP lint. |
+| Blade structure and dependencies | Passed for 23 templates: directive/argument balance, includes/layouts, named route references, static asset references, and escaped expressions. |
+| Form markup | Every POST form contains a CSRF directive. This is source inspection, not an HTTP security test. |
+| Composer and test configuration | JSON/XML parse passed. Framework and Breeze dependencies are declared; test database is forced to in-memory SQLite. |
+| CI configuration | YAML parse passed; GitHub Actions is configured for Composer checks on PHP 8.2 and 8.4. |
+| JavaScript | Node syntax check passed. Executing the actual confirmation handler with a simulated form confirmed that Cancel blocks submission and Accept permits it. |
+| CSS | Lexical and delimiter checks passed. |
+| Mock HTML structure | Seven temporary mock-data snapshots passed basic checks for one main heading, unique IDs, labelled fields, and existing image/style/script files. |
 
-No Laravel runtime, browser, CI, or deployment result is represented as passed.
-The original project's previous verification notes were superseded by this file;
-its earlier README remains unchanged under `docs/original-draft/`.
+The static audit also confirmed the presence of authentication middleware around
+task management routes, the archived-row update, the unfinished-to-done Mail
+facade guard, and the safe default log-mail setting. Source inspection alone
+does not establish that these flows run correctly.
 
-## Runtime checks to run before submission
+The mock snapshots were temporary layout aids and are not included as
+application output or submission evidence.
 
-Inside the `pos-foundations` folder, with PHP 8.2+ and Composer 2 available:
+## Checks not completed here
 
-```text
-composer install
-php scripts/setup.php
-composer test
-php artisan route:list --except-vendor
-php artisan serve
-```
+- PHP, Composer, Laravel boot, migrations, native PHP lint, and PHPUnit could
+  not run because PHP and Composer are not installed in this workspace.
+  Dependency download endpoints were unavailable, so dependencies and a
+  composer.lock file could not be resolved here.
+- Browser rendering could not complete: Chromium was blocked by the execution
+  sandbox's local socket permissions. No successful desktop/mobile screenshot
+  or interactive browser run is claimed.
+- No GitHub repository was created, no live Laravel deployment was published,
+  and no hosted endpoint was tested.
 
-For an existing database, use the README upgrade steps instead of running a
-fresh setup or restoring sample records. PHPUnit's database tests use the
-configured in-memory SQLite database, separate from your local data.
+## Included runnable validation
 
-The 12 supplied tests cover the required final schema and sample rows,
-password hash preservation on repeated seeding, database-enforced username
-uniqueness, reversible record-preserving renames, route/navigation responses,
-Eloquent collections in the listing views, dashboard queries, edits and added
-records appearing in the views, empty databases, escaped names, and 404 handling.
+There are **43 feature test methods**, including data-driven invalid-input and
+status-transition cases. The suite covers the public pages, guest restrictions,
+CRUD, input validation, archive retention, escaping, filters/pagination, seeders,
+registration/login/logout, rate limiting, reset/verification flows, account
+changes, completion mail, repeat prevention, and mail-failure rollback.
 
-The GitHub Actions workflow runs a PHP syntax check and this same suite after
-publishing the project as the repository root. Record its actual result once a
-run finishes; the workflow has not run in this editing session.
+A dedicated integration test uses the real log mail transport and checks that
+two saves of the same done task produce one completion subject header. Other
+mail/notification tests use Laravel fakes. None of these PHP tests was executed
+during preparation.
 
-Manually open `/`, `/about`, `/customers`, and `/users`. Confirm the actual
-database records render, test search/filters/reset/CSV, and check desktop and
-mobile layouts. Add your real repository and hosted application links and
-capture the required complete-conversation screenshots before submitting.
+Run locally after extracting the project:
+
+    composer install
+    php scripts/setup.php
+    composer check
+
+The check command compiles Blade, lists routes, runs native PHP lint on source
+and compiled views, and runs PHPUnit. Commit the resulting composer.lock after
+the checks pass. Repeat the README email demonstration in the running app, then
+deploy that same tested commit and complete SUBMISSION_CHECKLIST.md.

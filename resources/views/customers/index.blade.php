@@ -18,24 +18,24 @@
     </div>
     <div class="table-scroll" tabindex="0" role="region" aria-label="Customer account table">
         <table>
-            <caption class="sr-only">Customer accounts</caption>
+            <caption class="sr-only">Customer accounts from the application database</caption>
             <thead><tr><th scope="col">ACCOUNT ID</th><th scope="col">CUSTOMER</th><th scope="col">PHONE</th><th scope="col">CITY</th><th scope="col">STATUS</th><th scope="col">JOINED</th></tr></thead>
             <tbody>
                 @foreach ($customers as $customer)
-                <tr data-record data-status="{{ $customer->status }}">
-                    <td><span class="record-id">C-{{ $customer->id }}</span></td>
-                    <td><div class="person-cell"><span class="avatar">{{ strtoupper(substr($customer->full_name, 0, 1)) }}</span><div class="person-info"><strong>{{ $customer->full_name }}</strong><span>{{ $customer->email }}</span></div></div></td>
-                    <td class="no-wrap">{{ $customer->phone }}</td>
-                    <td>{{ $customer->city }}</td>
-                    <td><span class="badge {{ $customer->status === 'Active' ? 'badge-active' : 'badge-inactive' }}">{{ $customer->status }}</span></td>
-                    <td class="no-wrap">{{ $customer->joined_on?->format('Y-m-d') }}</td>
+                <tr data-record data-status="{{ $customer['status'] }}">
+                    <td><span class="record-id">C-{{ $customer['id'] }}</span></td>
+                    <td><div class="person-cell"><span class="avatar">{{ mb_strtoupper(mb_substr($customer['name'], 0, 1)) }}</span><div class="person-info"><strong>{{ $customer['name'] }}</strong><span>{{ $customer['email'] }}</span></div></div></td>
+                    <td class="no-wrap">{{ $customer['phone'] }}</td>
+                    <td>{{ $customer['city'] }}</td>
+                    <td><span class="badge {{ $customer['status'] === 'Active' ? 'badge-active' : 'badge-inactive' }}">{{ $customer['status'] }}</span></td>
+                    <td class="no-wrap">{{ $customer->joined_on->format('M d, Y') }}</td>
                 </tr>
                 @endforeach
-                <tr data-empty-state @if ($customers->isNotEmpty()) hidden @endif><td colspan="6"><div class="empty-state"><strong>No customers to display</strong><p>Try a different search or reset your filters.</p></div></td></tr>
+                <tr data-empty-state hidden><td colspan="6"><div class="empty-state"><strong>No matching customers</strong><p>Try a different search or reset your filters.</p></div></td></tr>
             </tbody>
         </table>
     </div>
-    <div class="directory-footer"><p role="status" aria-live="polite">Showing <strong data-visible-count>{{ count($customers) }}</strong> of {{ count($customers) }} customers</p><span class="data-note"><span class="status-dot"></span> Sample directory</span></div>
+    <div class="directory-footer"><p role="status" aria-live="polite">Showing <strong data-visible-count>{{ count($customers) }}</strong> of {{ count($customers) }} customers</p><span class="data-note"><span class="status-dot"></span> Store directory</span></div>
 </section>
 <p class="page-note">All names and contact details on this page are fictional sample data.</p>
 @endsection

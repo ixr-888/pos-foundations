@@ -1,221 +1,253 @@
-# Counter POS — TFA6: From Arrays to Eloquent
+# Counter POS · Tasks for Today
 
-A four-page Laravel POS account directory for IT0049 TFA6. Customer and staff
-pages now retrieve database records through Eloquent, and Blade renders model
-properties such as `full_name`. The overview also queries the database for its
-counts and recently joined customers. Search, filters, CSV exports, styling,
-and navigation are retained from the uploaded TFA5 project.
+IT0049 Technical Summative Assessment 4. This extends the supplied Counter POS
+project with Eloquent task CRUD, Breeze authentication, soft archiving, and
+automatic completion emails. The original visual style and store directories
+are retained.
 
 ## Run locally
 
-Requirements: PHP 8.2+, Composer 2, and PHP's `pdo_sqlite`, `sqlite3`, `mbstring`,
-`curl`, `dom`, `xml`, and `xmlwriter` extensions in addition to Laravel's standard
-extensions. Laravel 12 is retained for compatibility with PHP 8.2 installations.
-The activity sheet links to Laravel 13 documentation but does not require a
-particular framework version.
+Requirements: PHP 8.2+, Composer 2, and PHP extensions ctype, curl, dom, fileinfo,
+filter, hash, mbstring, openssl, pcre, pdo, pdo_sqlite, session, tokenizer, xml,
+and xmlwriter. Laravel 12 is retained for compatibility with PHP 8.2; the
+activity references Laravel 13 documentation but does not specify an upgrade.
 
-Extract the ZIP, open a terminal inside **pos-foundations** (the folder with
-`artisan` and `composer.json`), then run these commands one at a time:
+Extract the ZIP and open a terminal inside **pos-foundations**, the folder with
+**artisan** and **composer.json**:
 
-```powershell
-composer install
-php scripts/setup.php
-composer test
-php artisan serve
-```
+    composer install
+    php scripts/setup.php
+    composer check
+    php artisan serve
 
-Open **http://localhost:8000**. Keep the server terminal open. SQLite is the
-default; XAMPP's MySQL server is not needed for this configuration. CSS and JS
-are served directly from `public/`; there is no npm build step.
+Open **http://localhost:8000**. Keep the terminal running; Ctrl+C stops the
+server. Setup creates an environment file, application key, SQLite database,
+and seeded records. Existing environment settings and database contents are
+preserved. No Node, NPM, Vite build, queue worker, or real email inbox is needed
+with the default log-mail configuration.
 
-The setup script creates `.env` and the SQLite file when absent, generates an
-application key when needed, and runs migrations and seeders. The two seeders
-provide five fictional customers and five staff accounts. Repeated seeding
-updates the same sample IDs without adding duplicate rows or resetting staff
-password hashes. Seeding deliberately restores those five demo records; do not
-use it to preserve edits to demo records.
+Choose **Create account** to register your own login. Seeded team accounts have
+random, unpublished passwords; there is no shared default password. All
+signed-in users manage the shared task list. Email verification is supported
+but is not required to manage tasks.
 
-If PHP or Composer is not recognized, install/configure it and restart your
-terminal. For XAMPP, run `php --ini`, enable the required extensions in that
-PHP configuration, then retry. If Composer fails, resolve that failure before
-running Artisan: Composer creates `vendor/autoload.php`.
+For XAMPP, run **php --ini** and enable **extension=pdo_sqlite** and
+**extension=sqlite3** in the active php.ini. Resolve any missing PHP extensions
+reported by Composer before continuing. A missing vendor/autoload.php means
+Composer installation has not completed.
 
-## Upgrade an already-created TFA5 database
+## Pages and access
 
-Keep your existing `.env` and database file, copy the revised project source,
-and run:
-
-```text
-composer install
-php artisan config:clear
-php artisan migrate
-```
-
-The two original table-creation migrations are retained as migration history.
-The third migration, `2026_10_30_000003_rename_account_names_to_full_name.php`,
-renames `name` to `full_name` in both tables. It preserves rows and can reverse
-the rename through its `down()` method. Fresh installations run all three
-migrations in order and reach the same final schema.
-
-Do not use `migrate:fresh` for an existing database: it drops its tables.
-Run `php artisan db:seed` separately only when you want to restore the supplied
-sample accounts. Run application tests in the included isolated testing
-configuration; the PHPUnit configuration uses an in-memory SQLite database.
-
-## Required schema and retained display fields
-
-| Table | Required TFA6 fields in the final schema | Retained fields for the original pages |
+| Page / action | URL | Access |
 | --- | --- | --- |
-| customers | `full_name` string, `email` string (unique), `phone` string | `id`, `city`, `status`, `joined_on`, timestamps |
-| users | `username` string (unique), `full_name` string | `id`, unique `email`, `role`, `status`, password hash, email verification, remember token, timestamps |
+| Welcome and task counts | / | Public |
+| Task list, search, filters, pagination | /tasks | Public |
+| Active task details | /tasks/{task} | Public |
+| Student/project profile | /profile | Public |
+| About | /about | Public |
+| Create task | GET /tasks/create, POST /tasks | Logged in |
+| Edit/update task | GET /tasks/{task}/edit, PUT/PATCH /tasks/{task} | Logged in |
+| Archive task | DELETE /tasks/{task} | Logged in |
+| Personal account settings | /account | Logged in |
+| Store account directories | /customers, /users | Logged in |
+| Authentication | /register, /login, /forgot-password | Guest |
 
-The explicitly named TFA6 fields are present. Extra fields are retained so the
-existing customer and team directories keep their original columns and filters.
-TFA2 itself was not attached, so this is based on the schema stated in the TFA6
-sheet; compare it with your TFA2 work if that sheet includes further constraints.
-Phone numbers remain strings to preserve prefixes and formatting. Usernames
-are unique at the database level. Account IDs stay numeric: `C-` and `U-` are
-presentation prefixes added only in Blade.
+Authentication middleware protects write endpoints themselves. Forms use CSRF
+tokens and method spoofing. Blade escapes user text. Registration and account
+updates cannot assign roles or change account status.
 
-Staff passwords are hashed and not displayed. The seeder generates random
-passwords for new staff accounts; this read-only activity has no login screen.
-Role labels do not implement authorization.
+The public Profile describes the student/project. Editing your own login is a
+separate Account Settings page. The existing account directories now query
+Eloquent and require login, keeping registered user emails out of public pages.
 
-## MVC mapping
+## Database and validation
 
-| URL | Controller | Database access | Blade view |
-| --- | --- | --- | --- |
-| `/` | `PageController::home` | Model counts and three most recent customers | `pages/home.blade.php` |
-| `/about` | `PageController::about` | No records required | `pages/about.blade.php` |
-| `/customers` | `CustomerController::index` | `Customer::query()->orderBy('id')->get()` | `customers/index.blade.php` |
-| `/users` | `UserController::index` | `User::query()->orderBy('id')->get()` | `users/index.blade.php` |
+Migrations and seeders are included, satisfying the database submission
+requirement without an export. Setup seeds five customers, five fictional team
+accounts, and five tasks. Task fixture IDs are 3001–3005. Re-seeding skips
+existing task fixtures, including renamed/archived ones, and preserves existing
+sample-account password hashes.
 
-The controllers have no sample arrays or array fallback. Each listing passes
-an Eloquent collection to Blade. The views loop over models, output escaped
-properties, and format the customer's joining date as `Y-m-d`. Seed sample data
-lives in `database/seeders/`, independent of the controllers.
+| Task field | Rules / behavior |
+| --- | --- |
+| title | Required trimmed string, maximum 255 characters, single line |
+| description | Optional string, maximum 5,000 characters |
+| due_date | Required real calendar date in YYYY-MM-DD format |
+| priority | Required: low, medium, or high |
+| status | Required: pending, in_progress, or done |
+| is_archived | Server-controlled boolean, initially false |
+| created_by | Authenticated creator ID, set by server code |
+| completed_at | Set on completion, retained on done-to-done edits, cleared on reopening |
 
-## Verify that pages use the database
+Past dates are allowed for overdue work. Blank titles, malformed dates, unknown
+status/priority values, oversized input, and array values in string fields are
+rejected. Validation errors and old input appear on the form. Archiving sets
+**is_archived = true** and retains the row. Archived tasks are excluded from
+public lists/counts and return 404 on details, edit, update, and repeat archive
+requests.
 
-Run `composer test` after installing dependencies. The 12 tests cover schema,
-five records per table, repeatable seeding and password preservation, unique
-usernames, reversible name migration, all four pages, Eloquent view data,
-database edits appearing in the pages, changed dashboard totals, empty tables,
-escaped output, and a missing route.
+The attached TSA4 sheet is the requirements source. It refers to TSA3/TFA7,
+which were not attached. The rules above are the adopted field specification;
+compare them with any separately supplied TFA7 requirements before submitting.
 
-A GitHub Actions workflow is included at `.github/workflows/tests.yml` to install
-dependencies, check PHP syntax, and run the suite when this folder is the root
-of your repository. Its presence does not mean a CI run has passed.
+SQLite is the default. To use MySQL, create an empty database, enable pdo_mysql,
+and configure the following environment variables:
 
-For a manual check with SQLite, open `database/database.sqlite` in a SQLite
-editor; for MySQL, use phpMyAdmin or another client. Edit one customer's
-`full_name`, save, and refresh `/customers`. The edited value should appear.
-Change it back afterwards. The PHPUnit suite includes the same database-to-page
-check without changing your local database.
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=counter_tasks
+    DB_USERNAME=your_database_user
+    DB_PASSWORD=your_database_password
 
-Also check the following in the browser:
+Then run **php artisan config:clear** and **php artisan migrate --seed**.
+For an existing installation of the attached project, back up the database,
+install the updated source/dependencies, and run migrate --seed. Do not run
+migrate:fresh on data you want to keep.
 
-1. `/`, `/about`, `/customers`, and `/users` all load.
-2. The directories initially show five seeded records each.
-3. Searching for Ana returns Ana Reyes, and resetting restores the rows.
-4. The Inactive customer filter finds Gabriel Lim.
-5. Cashier plus Inactive finds Lea Navarro on the staff page.
-6. CSV export contains only the visible records and excludes avatar initials.
-7. Navigation, empty search results, and mobile layout remain usable.
+## Laravel Breeze
 
-See `VERIFICATION.md` for checks actually performed and remaining runtime checks.
+The Composer development dependencies declare **laravel/breeze**. The Blade
+authentication scaffold is included and adapted to the existing CSS, required
+username/role/status columns, and public Profile route. Source is in
+**routes/auth.php**, **app/Http/Controllers/Auth/**, and
+**app/Http/Requests/Auth/LoginRequest.php**.
 
-## AI review materials
+Included flows: registration, login/logout, remembered login, rate limiting,
+password reset, signed email verification, password confirmation, and account
+and password changes. Login accepts active accounts and normalizes email case.
+Registration assigns Staff and Active on the server.
 
-- `docs/original-draft/`: unchanged copies of the uploaded migrations, seeders,
-  sample-data controllers, README, and historical static preview.
-- `docs/MIGRATION-SEEDER-REVIEW.md`: review findings, corrected field/data plan,
-  a migration-versus-manual-MySQL explanation, and AI contribution disclosure.
-- `docs/SUBMISSION-CHECKLIST.md`: code, evidence, repository, and hosting items.
+**composer install** installs Breeze and the other declared dependencies.
+The scaffold is already included; running **php artisan breeze:install** here
+would overwrite customized files and is unnecessary. Breeze is a scaffolding
+dependency; the generated controllers work with production --no-dev installs.
 
-The historical preview is retained only as original evidence. It does not run
-Laravel or demonstrate Eloquent. Use the actual Laravel application for TFA6.
-Take genuine screenshots of the complete ChatGPT conversation yourself; no
-conversation screenshots are fabricated or included in this ZIP.
+## Configure and verify email
 
-The original uploaded README already disclosed AI generation. Its preserved
-files are a before-revision snapshot, not evidence of an independently authored
-pre-AI draft. If you have your own earlier draft, submit that as the original.
-This revision also used AI to edit the application, migration, seeders, tests,
-and documentation. Review the changes and disclose that scope accurately.
+The default environment uses Laravel's safe **log** mail transport:
 
-## Use MySQL instead of SQLite
+    MAIL_MAILER=log
+    MAIL_LOG_CHANNEL=single
+    MAIL_FROM_ADDRESS=hello@example.test
+    MAIL_FROM_NAME="Counter POS Tasks"
+    TASK_NOTIFICATION_EMAIL=tasks@example.test
 
-Create a MySQL database called `pos_foundations`. Set the following values in
-`.env`, using your own database credentials:
+Set TASK_NOTIFICATION_EMAIL to the configured recipient to display in the
+generated message. Run **php artisan config:clear** after environment changes.
+Messages are written to **storage/logs/laravel.log**, with no actual inbox
+delivery. Verification and password reset messages also use this transport.
 
-```dotenv
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=pos_foundations
-DB_USERNAME=root
-DB_PASSWORD=
-```
+Demonstrate the required flow:
 
-Remove or update any old `DB_DATABASE` path or `DB_URL` pointing to a different
-database. Enable `pdo_mysql`, start MySQL, then run:
+1. Register/log in and create a Pending task with a unique ASCII title, such as
+   **TSA4 email proof**.
+2. Edit it, select Done, and save. Confirm the completion timestamp and one
+   **Subject: Task completed: TSA4 email proof** header in the log.
+3. Edit its description while leaving it Done. Save again. The same subject
+   header must still occur exactly once.
+4. Reopen it as Pending, then mark it Done again. This is a new transition and
+   generates another completion email.
+5. Archive the task. Confirm it disappears from the active list and its
+   retained database row has is_archived = 1.
 
-```text
-php artisan config:clear
-php artisan migrate --seed
-```
+PowerShell subject-count command for steps 2 and 3:
 
-Migrations and seeders satisfy the sheet's database-submission option; a SQL
-export is not required in addition. This configuration is provided but has not
-been executed against MySQL in this environment.
+    (Select-String -Path .\storage\logs\laravel.log -SimpleMatch "Subject: Task completed: TSA4 email proof").Count
 
-## GitHub and hosted links required for submission
+Expect **1** after both saves. Use a fresh title for another demonstration so
+old messages do not affect the count.
 
-Code changes alone do not supply the two submission links. Create a GitHub
-repository and upload the contents of **pos-foundations** as its repository
-root, including hidden files such as `.gitignore` and `.github/`.
+**TaskController::update()** compares the persisted pre-update status with the
+validated new status and calls **Mail::to(...)->send(new TaskCompleted(...))**
+only on an unfinished-to-done transition. The Mailable uses HTML and plain text
+Blade views. Creating a task initially marked Done does not trigger this update
+notification. Seeders do not send notifications.
 
-If using Git, create an empty repository first, then run these commands from
-inside the project, replacing the sample remote with your real repository URL:
+Updates re-read the stored task inside a database transaction with a row lock.
+A transport failure rolls back the task and shows a retry message. The default
+log flow is synchronous. External SMTP acceptance followed by a failed database
+commit is outside this simple flow's exactly-once guarantees; an outbox would be
+needed for stronger production delivery guarantees.
 
-```text
-git init
-git add .
-git commit -m "Convert POS directories from arrays to Eloquent"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/pos-foundations.git
-git push -u origin main
-```
+For a local Mailpit instance or safe test SMTP inbox, switch to its settings:
 
-Commit `composer.lock` after the first successful dependency installation.
-Keep `.env`, `vendor/`, database files, compiled views, and logs out of Git;
-the included `.gitignore` excludes them.
+    MAIL_MAILER=smtp
+    MAIL_SCHEME=
+    MAIL_HOST=127.0.0.1
+    MAIL_PORT=1025
+    MAIL_USERNAME=
+    MAIL_PASSWORD=
 
-Host on a service supporting PHP 8.2+ and Laravel 12. GitHub Pages cannot run
-this PHP application. On the host:
+Use your sandbox's host, port, scheme, and credentials. Keep credentials in
+the environment file and out of Git.
 
-1. Deploy the repository and run `composer install --no-dev --optimize-autoloader`.
-2. Set `.env` or server environment values: `APP_ENV=production`, `APP_DEBUG=false`,
-   `APP_URL` to the real HTTPS address, and the database credentials.
-3. Generate a unique `APP_KEY` using `php artisan key:generate` after creating
-   the server `.env`. Keep it private and stable across deployments.
-4. Point the document root at `public/`. Make `storage/` and `bootstrap/cache/`
-   writable by the web-server process. Enable URL rewriting as required by
-   the server.
-5. For SQLite, use a persistent, writable database file and set `DB_DATABASE`
-   to its absolute server path. For MySQL, provision the database first.
-6. Run `php artisan migrate --force`. For a new demonstration database, run
-   `php artisan db:seed --force` once, then `php artisan optimize`.
-7. Open all four hosted pages and verify database-backed output.
+## Checks and tests
 
-Write your actual repository URL and hosted URL in the submission checklist.
-No remote repository, public deployment, or CI run was created by this edit.
+    composer check
+
+This lists routes, compiles Blade views, runs native PHP lint on source and
+compiled views, and runs PHPUnit. **composer test** runs only the feature suite.
+Tests force an isolated in-memory SQLite database and use fake mail and
+notifications, except one real log-transport test that removes its dedicated
+test log afterward.
+
+Coverage includes public/protected routes, CRUD, validation, escaping, filters,
+pagination, archiving, seeders, authentication, password reset/verification,
+account updates, completion emails, duplicate prevention, and mail-failure
+rollback. GitHub Actions runs the checks with PHP 8.2 and 8.4 after you push.
+
+See **VERIFICATION.md** for checks actually completed during preparation.
+PHP/Composer were unavailable here, so no successful Laravel/PHPUnit run is
+claimed. The first **composer install** resolves dependencies and generates
+composer.lock; commit it after checks pass so hosting uses the same versions.
+
+## Host and submit
+
+Use a PHP-capable host with PHP 8.2+, Composer, and persistent SQLite or MySQL.
+Static-only hosting such as GitHub Pages cannot run Laravel.
+
+1. Push the raw project source to your GitHub repository. Include migrations,
+   seeders, tests, and the generated composer.lock. The supplied .gitignore
+   excludes environment files, dependencies, local databases, logs, and sessions.
+2. Deploy the same tested commit. Install production dependencies with
+   **composer install --no-dev --optimize-autoloader**.
+3. Set APP_ENV=production, APP_DEBUG=false, your HTTPS APP_URL,
+   SESSION_SECURE_COOKIE=true, database settings, and mail settings. For SQLite,
+   use an absolute DB_DATABASE path on persistent storage.
+4. Generate APP_KEY once for a new installation with **php artisan key:generate**;
+   preserve an existing production key. Run **php artisan migrate --force**.
+   Optionally run **php artisan db:seed --force** for fictional demo records.
+5. Set the web server's document root to **public/**. Make storage/ and
+   bootstrap/cache/ writable by the PHP process. Apache rewrite rules are
+   included in public/.htaccess.
+6. Run **php artisan optimize**. Verify the four public pages, authentication,
+   CRUD, archiving, and the two-save email proof on the host.
+7. Add the real repository and application URLs to **SUBMISSION_CHECKLIST.md**,
+   then check both in a private browser window.
+
+No GitHub repository or live deployment was created by editing this ZIP.
+Those external submission steps remain to be completed in your accounts.
+
+## Source map
+
+| Responsibility | Location |
+| --- | --- |
+| Page and management routes | routes/web.php, routes/auth.php |
+| Task CRUD and email trigger | app/Http/Controllers/TaskController.php |
+| Shared validation | app/Http/Requests/TaskRequest.php |
+| Task and active scope | app/Models/Task.php |
+| Mailable and email views | app/Mail/TaskCompleted.php, resources/views/emails/ |
+| Public pages and task forms | resources/views/pages/, resources/views/tasks/ |
+| Schema and demo records | database/migrations/, database/seeders/ |
+| Local/CI checks | scripts/check.php, tests/Feature/, .github/workflows/tests.yml |
 
 ## References
 
-- [Laravel migrations](https://laravel.com/docs/12.x/migrations)
-- [Laravel seeding](https://laravel.com/docs/12.x/seeding)
-- [Laravel Eloquent](https://laravel.com/docs/12.x/eloquent)
-- [Blade](https://laravel.com/docs/12.x/blade)
+- [Laravel 12 documentation](https://laravel.com/docs/12.x)
+- [Laravel Mail](https://laravel.com/docs/12.x/mail)
+- [Laravel Breeze source and license](https://github.com/laravel/breeze)
 - [Laravel deployment](https://laravel.com/docs/12.x/deployment)
+
+The assessment references [Laravel 13 Mail](https://laravel.com/docs/13.x/mail)
+and [Laravel 13 Starter Kits](https://laravel.com/docs/13.x/starter-kits).

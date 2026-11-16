@@ -16,7 +16,7 @@ if (! is_file($root.'/vendor/autoload.php')) {
     exit(1);
 }
 
-foreach (['ctype', 'curl', 'dom', 'fileinfo', 'filter', 'hash', 'mbstring', 'openssl', 'pcre', 'pdo', 'pdo_sqlite', 'session', 'tokenizer', 'xml'] as $extension) {
+foreach (['ctype', 'curl', 'dom', 'fileinfo', 'filter', 'hash', 'mbstring', 'openssl', 'pcre', 'pdo', 'pdo_sqlite', 'session', 'tokenizer', 'xml', 'xmlwriter'] as $extension) {
     if (! extension_loaded($extension)) {
         fwrite(STDERR, "Enable the PHP extension: ".$extension."\n");
         exit(1);
@@ -76,3 +76,5 @@ artisan('route:list --except-vendor');
 
 fwrite(STDOUT, "\nSetup complete. Run: php artisan serve\n");
 fwrite(STDOUT, "Then open: http://localhost:8000\n");
+fwrite(STDOUT, "Register your own account to manage tasks. Sample users have no shared password.\n");
+fwrite(STDOUT, "Completion mail defaults to storage/logs/laravel.log. Run composer check to verify.\n");

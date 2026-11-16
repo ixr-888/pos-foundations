@@ -9,7 +9,7 @@ class UserController extends Controller
 {
     public function index(): View
     {
-        $users = User::query()->orderBy('id')->get();
+        $users = User::orderBy('id')->get();
 
         return view('users.index', compact('users'));
     }

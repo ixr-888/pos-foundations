@@ -31,7 +31,7 @@
                     <td class="no-wrap">{{ $customer->joined_on->format('M d, Y') }}</td>
                 </tr>
                 @endforeach
-                <tr data-empty-state hidden><td colspan="6"><div class="empty-state"><strong>No matching customers</strong><p>Try a different search or reset your filters.</p></div></td></tr>
+                <tr data-empty-state @if ($customers->isNotEmpty()) hidden @endif><td colspan="6"><div class="empty-state"><strong>{{ $customers->isEmpty() ? 'No customers to display' : 'No matching customers' }}</strong><p>{{ $customers->isEmpty() ? 'Your customer directory is empty.' : 'Try a different search or reset your filters.' }}</p></div></td></tr>
             </tbody>
         </table>
     </div>

@@ -99,11 +99,12 @@ class TaskCompletionMailTest extends TestCase
 
     public function test_transport_failure_rolls_back_status_and_shows_retry_message(): void
     {
+        $task = Task::factory()->create();
+        $user = User::factory()->create();
         config(['tasks.notification_recipient' => 'tasks@example.test']);
         Mail::shouldReceive('to')->once()->with('tasks@example.test')->andReturnSelf();
         Mail::shouldReceive('send')->once()->andThrow(new TransportException('Sandbox unavailable'));
-        $task = Task::factory()->create();
-        $this->actingAs(User::factory()->create())->from("/tasks/{$task->id}/edit")
+        $this->actingAs($user)->from("/tasks/{$task->id}/edit")
             ->put("/tasks/{$task->id}", $this->payload($task))
             ->assertRedirect("/tasks/{$task->id}/edit")->assertSessionHasErrors('notification');
         $this->assertSame('pending', $task->fresh()->status);

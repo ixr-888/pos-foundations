@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -18,20 +19,20 @@ class DatabaseSeedTest extends TestCase
     {
         $this->seed();
 
-        $this->assertTrue(Schema::hasColumns('customers', ['id', 'full_name', 'email', 'phone']));
-        $this->assertTrue(Schema::hasColumns('users', ['id', 'username', 'full_name']));
-        $this->assertFalse(Schema::hasColumn('customers', 'name'));
-        $this->assertFalse(Schema::hasColumn('users', 'name'));
+        $this->assertTrue(Schema::hasColumns('customers', ['id', 'name', 'email', 'phone']));
+        $this->assertTrue(Schema::hasColumns('users', ['id', 'username', 'name']));
+        $this->assertFalse(Schema::hasColumn('customers', 'full_name'));
+        $this->assertFalse(Schema::hasColumn('users', 'full_name'));
         $this->assertDatabaseCount('customers', 5);
         $this->assertDatabaseCount('users', 5);
         $this->assertDatabaseHas('customers', [
-            'id' => 1001, 'full_name' => 'Ana Reyes',
+            'id' => 1001, 'name' => 'Ana Reyes',
             'email' => 'ana.reyes@example.test', 'phone' => '+63 900 000 1001',
         ]);
         $this->assertDatabaseHas('users', [
-            'id' => 2001, 'full_name' => 'Alex Mendoza', 'username' => 'alex.mendoza',
+            'id' => 2001, 'name' => 'Alex Mendoza', 'username' => 'alex.mendoza',
         ]);
-        $this->assertDatabaseHas('users', ['id' => 2005, 'full_name' => 'Marco Rivera']);
+        $this->assertDatabaseHas('users', ['id' => 2005, 'name' => 'Marco Rivera']);
 
         foreach (User::all() as $user) {
             $this->assertNotEmpty(password_get_info($user->password)['algo']);
@@ -59,9 +60,11 @@ class DatabaseSeedTest extends TestCase
     {
         $this->seed();
         $this->expectException(QueryException::class);
+        // Confirm the failure is the username constraint, not a missing field.
+        $this->expectExceptionMessage('UNIQUE constraint failed: users.username');
 
         User::create([
-            'full_name' => 'Duplicate Username',
+            'name' => 'Duplicate Username',
             'username' => 'alex.mendoza',
             'email' => 'different.staff@example.test',
             'role' => 'Cashier',
@@ -73,20 +76,37 @@ class DatabaseSeedTest extends TestCase
     public function test_name_upgrade_and_rollback_preserve_existing_records(): void
     {
         $this->seed();
-        $migration = require database_path('migrations/2026_10_30_000003_rename_account_names_to_full_name.php');
+        $this->assertSame('sqlite', DB::connection()->getDriverName());
+        $this->assertSame(':memory:', DB::connection()->getDatabaseName());
+
+        // Build an independent legacy fixture inside RefreshDatabase's transaction.
+        Schema::dropIfExists('tsa4_account_name_renames');
+        foreach (['customers', 'users'] as $table) {
+            Schema::table($table, function (Blueprint $blueprint): void {
+                $blueprint->renameColumn('name', 'full_name');
+            });
+        }
+        DB::table('customers')->where('id', 1001)->update(['full_name' => 'Existing Customer']);
+        DB::table('users')->where('id', 2001)->update(['full_name' => 'Existing Staff']);
+        $password = DB::table('users')->where('id', 2001)->value('password');
+        $createdAt = DB::table('users')->where('id', 2001)->value('created_at');
+
+        $migration = require database_path('migrations/2026_11_16_180000_align_account_name_columns.php');
+        $migration->up();
+        $this->assertDatabaseHas('customers', ['id' => 1001, 'name' => 'Existing Customer']);
+        $this->assertDatabaseHas('users', ['id' => 2001, 'name' => 'Existing Staff']);
+        $this->assertSame($password, DB::table('users')->where('id', 2001)->value('password'));
+        $this->assertSame($createdAt, DB::table('users')->where('id', 2001)->value('created_at'));
 
         $migration->down();
-        $this->assertDatabaseHas('customers', ['id' => 1001, 'name' => 'Ana Reyes']);
-        $this->assertDatabaseHas('users', ['id' => 2001, 'name' => 'Alex Mendoza']);
-
-        // Simulate records edited in the earlier TFA5 database before upgrading.
-        DB::table('customers')->where('id', 1001)->update(['name' => 'Existing Customer']);
-        DB::table('users')->where('id', 2001)->update(['name' => 'Existing Staff']);
-        $migration->up();
-
         $this->assertDatabaseHas('customers', ['id' => 1001, 'full_name' => 'Existing Customer']);
         $this->assertDatabaseHas('users', ['id' => 2001, 'full_name' => 'Existing Staff']);
+        $this->assertSame($password, DB::table('users')->where('id', 2001)->value('password'));
         $this->assertDatabaseCount('customers', 5);
         $this->assertDatabaseCount('users', 5);
+
+        $migration->up();
+        $this->assertDatabaseHas('customers', ['id' => 1001, 'name' => 'Existing Customer']);
+        $this->assertDatabaseHas('users', ['id' => 2001, 'name' => 'Existing Staff']);
     }
 }

@@ -31,7 +31,7 @@
                     <td><span class="badge {{ $user['status'] === 'Active' ? 'badge-active' : 'badge-inactive' }}">{{ $user['status'] }}</span></td>
                 </tr>
                 @endforeach
-                <tr data-empty-state hidden><td colspan="5"><div class="empty-state"><strong>No matching team members</strong><p>Try a different search or reset your filters.</p></div></td></tr>
+                <tr data-empty-state @if ($users->isNotEmpty()) hidden @endif><td colspan="5"><div class="empty-state"><strong>{{ $users->isEmpty() ? 'No team members to display' : 'No matching team members' }}</strong><p>{{ $users->isEmpty() ? 'Your team directory is empty.' : 'Try a different search or reset your filters.' }}</p></div></td></tr>
             </tbody>
         </table>
     </div>
